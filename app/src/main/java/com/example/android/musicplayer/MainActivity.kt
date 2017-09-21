@@ -1,9 +1,6 @@
 package com.example.android.musicplayer
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.IBinder
@@ -19,6 +16,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        createConnection()
+
+        bindMusicService()
+
+        setOnClickListeners()
+    }
+
+    private fun createConnection() {
         connection = object : ServiceConnection {
             override fun onServiceDisconnected(p0: ComponentName?) = Unit
 
@@ -27,10 +32,6 @@ class MainActivity : AppCompatActivity() {
                 Log.d("activity", "binded service")
             }
         }
-
-        bindMusicService()
-
-        setOnClickListeners()
     }
 
     private fun bindMusicService() {
@@ -53,7 +54,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        service?.unbindService(connection)
+        unbindService(connection)
         super.onDestroy()
     }
 

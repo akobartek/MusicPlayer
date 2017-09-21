@@ -19,11 +19,19 @@ import java.util.*
 import android.app.PendingIntent
 import android.app.NotificationManager
 import android.content.Context
+import android.content.IntentFilter
 
-const val startMusicAction = "com.example.android.musicplayer.startmusic"
-const val stopMusicAction = "com.example.android.musicplayer.stopmusic"
+const val START_MUSIC_ACTION = "com.example.android.musicplayer.startmusic"
+const val STOP_MUSIC_ACTION = "com.example.android.musicplayer.stopmusic"
+const val NOTIFICATION_ID = 0
 
 class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
+
+    private lateinit var receiver: HeadphonesStateBroadcastReceiver
+    private val filter = IntentFilter().apply {
+        addAction("android.intent.action.HEADSET_PLUG")
+    }
+
 
     private lateinit var player: MediaPlayer
 
@@ -36,9 +44,13 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("service", "onStartCommand")
-        if (intent?.action == startMusicAction) playMusic()
-        if (intent?.action == stopMusicAction) stopMusic()
+        if (intent?.action == START_MUSIC_ACTION) playMusic()
+        if (intent?.action == STOP_MUSIC_ACTION) stopMusic()
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stopSelf()
     }
 
     override fun onCreate() {
@@ -54,6 +66,17 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
         }
 
         retrieveDeviceSongList()
+
+        receiver = HeadphonesStateBroadcastReceiver(this)
+        registerReceiver(receiver, filter)
+    }
+
+    override fun onDestroy() {
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(NOTIFICATION_ID)
+        unregisterReceiver(receiver)
+        stopForeground(true)
+        super.onDestroy()
     }
 
     private fun retrieveDeviceSongList() {
@@ -106,12 +129,12 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
     private fun createNotification(currentlyPlayedSong: Song) {
 
         val intent = Intent(this, MusicService::class.java).apply {
-            action = startMusicAction
+            action = START_MUSIC_ACTION
         }
         val actionOnePendingIntent = PendingIntent.getService(this, 100, intent, 0)
 
-        val intent2 = Intent(this, MusicService::class.java). apply {
-            action = stopMusicAction
+        val intent2 = Intent(this, MusicService::class.java).apply {
+            action = STOP_MUSIC_ACTION
         }
         val actionTwoPendingIntent = PendingIntent.getService(this, 101, intent2, 0)
 
@@ -125,7 +148,7 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
         Log.d("notifcation", currentlyPlayedSong.title)
 
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(0, builder.build())
+        manager.notify(NOTIFICATION_ID, builder.build())
     }
 
     fun stopMusic() {
