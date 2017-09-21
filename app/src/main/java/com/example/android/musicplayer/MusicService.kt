@@ -29,7 +29,8 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
 
     private lateinit var receiver: HeadphonesStateBroadcastReceiver
     private val filter = IntentFilter().apply {
-        addAction("android.intent.action.HEADSET_PLUG")
+        addAction(AudioManager.ACTION_HEADSET_PLUG)
+        addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
     }
 
 
@@ -67,7 +68,7 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
 
         retrieveDeviceSongList()
 
-        receiver = HeadphonesStateBroadcastReceiver(this)
+        receiver = HeadphonesStateBroadcastReceiver(player)
         registerReceiver(receiver, filter)
     }
 
