@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity(), MediaPlayer.OnPreparedListener, MediaP
 
     private fun retrieveDeviceSongList() {
         songList = mutableListOf()
+
         val musicResolver = contentResolver
         val musicCursor = musicResolver.query(EXTERNAL_CONTENT_URI, null, null, null, null)
 
