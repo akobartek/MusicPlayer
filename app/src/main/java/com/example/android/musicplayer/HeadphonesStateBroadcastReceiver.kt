@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 
-class HeadphonesStateBroadcastReceiver(val player: MediaPlayer) : BroadcastReceiver() {
+class HeadphonesStateBroadcastReceiver(private val player: MediaPlayer) : BroadcastReceiver() {
 
     override fun onReceive(p0: Context?, intent: Intent) {
         val state = intent.getIntExtra(Intent.ACTION_HEADSET_PLUG, -1)
