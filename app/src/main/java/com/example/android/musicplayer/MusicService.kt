@@ -11,17 +11,24 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.provider.BaseColumns
 import android.provider.MediaStore
+import android.support.v4.app.TaskStackBuilder
+import android.support.v7.app.NotificationCompat
 import android.util.Log
 import com.example.android.musicplayer.model.Song
 import java.io.IOException
 import java.util.*
+import android.app.PendingIntent
+import android.content.Context.NOTIFICATION_SERVICE
+import android.app.NotificationManager
+import android.content.Context
+
 
 class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
 
     private lateinit var player: MediaPlayer
 
     private var songList: MutableList<Song> = mutableListOf()
-    private var currentSongPosition = 0
+    private var currentSongPosition = 3
 
     private val binder = MusicBinder()
 
@@ -45,23 +52,6 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
         }
 
         retrieveDeviceSongList()
-
-        prepareMediaPlayer()
-    }
-
-    private fun prepareMediaPlayer() {
-        player.reset()
-        val currentlyPlayedSong = songList[currentSongPosition]
-        val currentSongId = currentlyPlayedSong.id
-        val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, currentSongId)
-
-        try {
-            player.setDataSource(applicationContext, trackUri)
-        } catch (ex: IOException) {
-            ex.printStackTrace()
-        }
-
-        player.prepareAsync()
     }
 
     private fun retrieveDeviceSongList() {
@@ -80,6 +70,7 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
             do {
                 val thisId = musicCursor.getLong(idColumn)
                 val songTitle = musicCursor.getString(titleColumn)
+                Log.d("service", songTitle)
                 val songArtist = musicCursor.getString(artistColumn)
                 val songAlbum = musicCursor.getString(albumNameColumn)
                 val albumCoverId = musicCursor.getLong(albumCoverColumn)
@@ -91,6 +82,44 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
         }
         musicCursor?.close()
         Collections.sort<Song>(songList) { lhs, rhs -> lhs.title.compareTo(rhs.title) }
+    }
+
+    fun playMusic() {
+        player.reset()
+        val currentlyPlayedSong = songList[currentSongPosition]
+        val currentSongId = currentlyPlayedSong.id
+        val trackUri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, currentSongId)
+
+        try {
+            player.setDataSource(applicationContext, trackUri)
+        } catch (ex: IOException) {
+            ex.printStackTrace()
+        }
+
+        createNotification(currentlyPlayedSong)
+
+        player.prepareAsync()
+    }
+
+    private fun createNotification(currentlyPlayedSong: Song) {
+        val builder = NotificationCompat.Builder(this)
+        builder.setSmallIcon(R.mipmap.ic_launcher_round)
+        builder.setContentTitle(currentlyPlayedSong.title)
+        Log.d("notifcation", currentlyPlayedSong.title)
+
+        val resultIntent = Intent(this, MainActivity::class.java)
+        val stackBuilder = TaskStackBuilder.create(this)
+        stackBuilder.addParentStack(MainActivity::class.java)
+        stackBuilder.addNextIntent(resultIntent)
+        val resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)
+        builder.setContentIntent(resultPendingIntent)
+
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(0, builder.build())
+    }
+
+    fun stopMusic() {
+        player.pause()
     }
 
     override fun onCompletion(mediaPlayer: MediaPlayer) = Unit

@@ -1,6 +1,7 @@
 package com.example.android.musicplayer
 
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.support.v7.app.AppCompatActivity
@@ -12,34 +13,47 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
 
     private var service: MusicService? = null
+    private lateinit var connection: ServiceConnection
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        connection = object : ServiceConnection {
+            override fun onServiceDisconnected(p0: ComponentName?) = Unit
+
+            override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
+                service = (binder as MusicService.MusicBinder).getService()
+                Log.d("activity", "binded service")
+            }
+        }
+
+        bindMusicService()
+
         setOnClickListeners()
+    }
+
+    private fun bindMusicService() {
+        val intent = Intent(this, MusicService::class.java)
+        bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        stopBtn.isEnabled = true
     }
 
     private fun setOnClickListeners() {
         startBtn.setOnClickListener {
-            val intent = Intent(this, MusicService::class.java)
-            val connection: ServiceConnection = object : ServiceConnection {
-                override fun onServiceDisconnected(p0: ComponentName?) = Unit
-
-                override fun onServiceConnected(p0: ComponentName?, binder: IBinder?) {
-                    service = (binder as MusicService.MusicBinder).getService()
-                    Log.d("activity", "binded service")
-                }
-            }
-            bindService(intent, connection, 0)
+            service?.playMusic()
             stopBtn.isEnabled = true
         }
 
         stopBtn.setOnClickListener {
-            val intent = Intent(this, MusicService::class.java)
-            service?.stopService(intent)
+            service?.stopMusic()
+            stopBtn.isEnabled = false
         }
     }
 
+    override fun onDestroy() {
+        service?.unbindService(connection)
+        super.onDestroy()
+    }
 
 }
