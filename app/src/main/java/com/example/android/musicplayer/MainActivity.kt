@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity(), MediaPlayer.OnPreparedListener, MediaP
         }
     }
 
-    fun prepareMediaPlayer() {
+    private fun prepareMediaPlayer() {
         player.reset()
         val currentlyPlayedSong = songList[currentSongPosition]
         val currentSongId = currentlyPlayedSong.id
@@ -92,6 +92,8 @@ class MainActivity : AppCompatActivity(), MediaPlayer.OnPreparedListener, MediaP
         musicCursor?.close()
         Collections.sort<Song>(songList) { lhs, rhs -> lhs.title.compareTo(rhs.title) }
     }
+
+
 
     override fun onCompletion(mediaPlayer: MediaPlayer) = Unit
 
