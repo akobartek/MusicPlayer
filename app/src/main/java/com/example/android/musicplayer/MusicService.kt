@@ -11,17 +11,17 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.provider.BaseColumns
 import android.provider.MediaStore
-import android.support.v4.app.TaskStackBuilder
 import android.support.v7.app.NotificationCompat
 import android.util.Log
 import com.example.android.musicplayer.model.Song
 import java.io.IOException
 import java.util.*
 import android.app.PendingIntent
-import android.content.Context.NOTIFICATION_SERVICE
 import android.app.NotificationManager
 import android.content.Context
 
+const val startMusicAction = "com.example.android.musicplayer.startmusic"
+const val stopMusicAction = "com.example.android.musicplayer.stopmusic"
 
 class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
 
@@ -36,6 +36,8 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("service", "onStartCommand")
+        if (intent?.action == startMusicAction) playMusic()
+        if (intent?.action == stopMusicAction) stopMusic()
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -102,17 +104,25 @@ class MusicService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnEr
     }
 
     private fun createNotification(currentlyPlayedSong: Song) {
+
+        val intent = Intent(this, MusicService::class.java).apply {
+            action = startMusicAction
+        }
+        val actionOnePendingIntent = PendingIntent.getService(this, 100, intent, 0)
+
+        val intent2 = Intent(this, MusicService::class.java). apply {
+            action = stopMusicAction
+        }
+        val actionTwoPendingIntent = PendingIntent.getService(this, 101, intent2, 0)
+
         val builder = NotificationCompat.Builder(this)
         builder.setSmallIcon(R.mipmap.ic_launcher_round)
-        builder.setContentTitle(currentlyPlayedSong.title)
-        Log.d("notifcation", currentlyPlayedSong.title)
+                .setContentTitle(currentlyPlayedSong.title)
+                .setAutoCancel(false)
+                .addAction(R.mipmap.ic_launcher, getString(R.string.start), actionOnePendingIntent)
+                .addAction(R.mipmap.ic_launcher, getString(R.string.stop), actionTwoPendingIntent)
 
-        val resultIntent = Intent(this, MainActivity::class.java)
-        val stackBuilder = TaskStackBuilder.create(this)
-        stackBuilder.addParentStack(MainActivity::class.java)
-        stackBuilder.addNextIntent(resultIntent)
-        val resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT)
-        builder.setContentIntent(resultPendingIntent)
+        Log.d("notifcation", currentlyPlayedSong.title)
 
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(0, builder.build())

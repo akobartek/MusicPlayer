@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun bindMusicService() {
         val intent = Intent(this, MusicService::class.java)
+        startService(intent)
         bindService(intent, connection, Context.BIND_AUTO_CREATE)
         stopBtn.isEnabled = true
     }
